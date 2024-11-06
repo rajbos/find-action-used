@@ -68,9 +68,10 @@ app.get('/callback', async (req, res) => {
 });
 
 let appOctokit; 
+let userLogin;
 async function startApp(token) {
   console.log('Starting app with token:', token);
-appOctokit = new Octokit({
+  appOctokit = new Octokit({
     auth: token,
     request: {
       fetch: fetch,
@@ -84,15 +85,15 @@ appOctokit = new Octokit({
                                       // store the user repos for later use
                                       return response.data;
                                     });
-    console.log(`Fetching repositories for user [${user.login}]`);
+    userLogin = user.login;
+    console.log(`Fetching repositories for user [${userLogin}]`);
     try {
-      const response = await appOctokit.paginate(`GET /users/${user.login}/repos`)
+      const response = await appOctokit.paginate(`GET /users/${userLogin}/repos`)
                                     .then((response) => {
-                                      // store the user repos for later use
-                                      console.log(response);
-                                      console.log(`[${response.length}] repositories found`);
+                                      console.log(`[${response.length}] repositories found for user [${userLogin}]`);
                                       return response;
                                     });
+      // store the user repos for later use
       console.log('Repositories fetched in response:', response.length);
       repos = response;
       
@@ -112,8 +113,8 @@ appOctokit = new Octokit({
 
 app.get('/info', (req, res) => {
   // check if user already authenticated
-  if (!repos.length) {
-    res.send('No repositories found. Go to <a href="/auth">/auth</a> to authenticate.');
+  if (!userLogin) {
+    res.send('Login first. Go to <a href="/auth">/auth</a> to authenticate.');
     return;
   }
   console.log('Received info request');
@@ -121,7 +122,6 @@ app.get('/info', (req, res) => {
   let response = `[${repos.length}] Repositories found: <pre>` + JSON.stringify(repoNames, null, 2) + `</pre><br>`;
   
   if (orgs !== undefined && orgs.length > 0) {
-    console.log(orgs);
     console.log(`[${orgs.length}] orgs found: ` + JSON.stringify(orgs, null, 2));
     const orgNames = orgs.map(org => org.login);
     console.log(`[${orgs.length}] orgs found: ` + JSON.stringify(orgNames, null, 2));
