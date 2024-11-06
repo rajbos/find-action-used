@@ -1,0 +1,17 @@
+{
+  "name": "find-action-used",
+  "version": "0.0.0",
+  "description": "A tool to find specific GitHub Actions used in workflows",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@octokit/auth-oauth-app": "^3.0.0",
+    "@octokit/rest": "^18.0.0",
+    "dotenv": "^10.0.0",
+    "express": "^4.21.1",
+    "js-yaml": "^4.0.0"
+  }
+}

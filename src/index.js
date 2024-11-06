@@ -1,96 +1,83 @@
-const { Octokit } = require("@octokit/rest");
-const { createOAuthAppAuth } = require("@octokit/auth-oauth-app");
-const yaml = require("js-yaml");
-const fs = require("fs");
-const path = require("path");
+import 'dotenv/config';
+import { Octokit } from "@octokit/rest";
+import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
+import yaml from "js-yaml";
+import fs from "fs";
+import path from "path";
+import express from "express";
+import { exec } from "child_process";
+
+const app = express();
+const port = 3000;
 
 const clientId = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 
 const auth = createOAuthAppAuth({
+  clientType: "oauth-app",
   clientId,
   clientSecret,
 });
 
-async function authenticate() {
-  const { token } = await auth({
-    type: "oauth-user",
+app.get('/', (req, res) => {
+  res.send('Welcome to the GitHub Actions Finder App! Go to <a href="/auth">/auth</a> to authenticate.');
+});
+
+app.get('/auth', async (req, res) => {
+  try {
+    const { url } = await auth({
+      type: "oauth-app",
+      clientId,
+      scopes: ["repo"],
+    });
+    console.log(`Redirecting to: ${url}`);
+    res.redirect(url);
+  } catch (error) {
+    console.error('Error generating auth URL:', error);
+    res.status(500).send('Error generating auth URL');
+  }
+});
+
+app.get('/callback', async (req, res) => {
+  console.log('Received callback request');
+  const { code } = req.query;
+  console.log(`Authorization code received: ${code}`);
+  try {
+    const { token } = await auth({
+      type: "token",
+      code,
+      clientId,
+      clientSecret,
+    });
+    console.log('Authentication successful, token received');
+    res.send("Authentication successful! You can close this window.");
+    startApp(token);
+  } catch (error) {
+    console.error('Error during callback:', error);
+    res.status(500).send('Error during callback');
+  }
+});
+
+async function startApp(token) {
+  console.log('Starting app with token:', token);
+  const octokit = new Octokit({
+    auth: token
   });
-  return token;
-}
-
-async function getRepositories(octokit) {
-  const { data: repos } = await octokit.repos.listForAuthenticatedUser();
-  return repos;
-}
-
-async function getWorkflowFiles(octokit, owner, repo) {
-  const { data: contents } = await octokit.repos.getContent({
-    owner,
-    repo,
-    path: ".github/workflows",
-  });
-
-  const workflowFiles = contents.filter(
-    (file) => file.name.endsWith(".yml") || file.name.endsWith(".yaml")
-  );
-
-  return workflowFiles;
-}
-
-function parseYamlFile(content) {
-  const doc = yaml.load(content);
-  const actions = [];
-
-  for (const job of Object.values(doc.jobs)) {
-    for (const step of job.steps) {
-      if (
-        step.uses &&
-        (step.uses.includes("actions/download-artifact") ||
-          step.uses.includes("actions/upload-artifact"))
-      ) {
-        const version = step.uses.split("@")[1];
-        actions.push({ action: step.uses, version });
-      }
+  console.log('Octokit initialized');
+  // Add more logging as needed for further operations
+  async function getRepositories() {
+    try {
+      const response = await octokit.request('GET /user/repos');
+      console.log(response.data);
+    } catch (error) {
+      console.error(error);
     }
   }
 
-  return actions;
+  await getRepositories();
 }
 
-async function main() {
-  const token = await authenticate();
-  const octokit = new Octokit({ auth: token });
-
-  const repos = await getRepositories(octokit);
-
-  for (const repo of repos) {
-    const workflowFiles = await getWorkflowFiles(
-      octokit,
-      repo.owner.login,
-      repo.name
-    );
-
-    for (const file of workflowFiles) {
-      const { data: content } = await octokit.repos.getContent({
-        owner: repo.owner.login,
-        repo: repo.name,
-        path: file.path,
-      });
-
-      const decodedContent = Buffer.from(content.content, "base64").toString(
-        "utf8"
-      );
-      const actions = parseYamlFile(decodedContent);
-
-      console.log(`Repository: ${repo.name}`);
-      console.log(`Workflow file: ${file.name}`);
-      console.log("Actions found:", actions);
-    }
-  }
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
+app.listen(port, () => {
+  console.log(`App listening at http://localhost:${port}`);
+  exec(`xdg-open http://localhost:${port}/auth`);
 });

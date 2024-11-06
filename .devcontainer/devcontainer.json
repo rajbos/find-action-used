@@ -1,0 +1,17 @@
+{
+  "name": "My Project",
+  "dockerFile": "Dockerfile",
+  "appPort": [3000],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "extensions": [
+          "dbaeumer.vscode-eslint",
+          "GitHub.copilot",
+          "GitHub.copilot-chat"
+        ]
+        }
+      }
+    }
+}
