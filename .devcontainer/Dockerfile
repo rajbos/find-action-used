@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/vscode/devcontainers/javascript-node:0-14
+FROM mcr.microsoft.com/devcontainers/javascript-node:22
 
 # Install additional dependencies if needed
 # RUN apt-get update && apt-get install -y <package-name>
@@ -10,10 +10,10 @@ WORKDIR /workspaces/find-action-used
 COPY . .
 
 # Install project dependencies
-RUN npm install
+#RUN npm install
 
 # Expose the specified port
 EXPOSE 3000
 
 # Command to run the application
-CMD ["npm", "start"]
+#CMD ["npm", "start"]

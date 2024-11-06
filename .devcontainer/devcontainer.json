@@ -8,8 +8,6 @@
         "terminal.integrated.shell.linux": "/bin/bash",
         "extensions": [
           "dbaeumer.vscode-eslint",
-          "GitHub.copilot",
-          "GitHub.copilot-chat"
         ]
         }
       }
