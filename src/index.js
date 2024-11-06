@@ -78,13 +78,20 @@ appOctokit = new Octokit({
   });
   console.log(`Octokit initialized`);
   async function getRepositories() {
-    console.log('Fetching repositories');
-    try {
-      const response = await appOctokit.request('GET /user/repos')
+    // first fetch the current user
+    const user = await appOctokit.request('GET /user')
                                     .then(response => {
                                       // store the user repos for later use
-                                      console.log(`[${response.data.length}] repositories found`);
                                       return response.data;
+                                    });
+    console.log(`Fetching repositories for user [${user.login}]`);
+    try {
+      const response = await appOctokit.paginate(`GET /users/${user.login}/repos`)
+                                    .then((response) => {
+                                      // store the user repos for later use
+                                      console.log(response);
+                                      console.log(`[${response.length}] repositories found`);
+                                      return response;
                                     });
       console.log('Repositories fetched in response:', response.length);
       repos = response;
@@ -92,7 +99,6 @@ appOctokit = new Octokit({
       // scan for the orgs the user has access to
       orgs = await appOctokit.request("GET /user/orgs")
                               .then(response => {
-                                console.log(response.data);
                                 console.log(`[${response.data.length}] orgs found`);
                                 return response.data;
                               });
