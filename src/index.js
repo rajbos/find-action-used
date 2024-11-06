@@ -10,6 +10,7 @@ import { OAuthApp } from "@octokit/oauth-app";
 
 // global data storage
 let repos = [];
+let orgs = [];
 
 // setup for the app
 const port = 3000;
@@ -66,9 +67,10 @@ app.get('/callback', async (req, res) => {
   }
 });
 
+let appOctokit; 
 async function startApp(token) {
   console.log('Starting app with token:', token);
-  const octokit = new Octokit({
+appOctokit = new Octokit({
     auth: token,
     request: {
       fetch: fetch,
@@ -78,15 +80,22 @@ async function startApp(token) {
   async function getRepositories() {
     console.log('Fetching repositories');
     try {
-      const response = await octokit.request('GET /user/repos')
-                                    .then(data => {
+      const response = await appOctokit.request('GET /user/repos')
+                                    .then(response => {
                                       // store the user repos for later use
-                                      console.log(`[${data.length}] repositories found`);
-                                      //console.log(data);
-                                      return data;
+                                      console.log(`[${response.data.length}] repositories found`);
+                                      return response.data;
                                     });
-      console.log('Repositories fetched in response:', response.data.length);
-      repos = response.data;
+      console.log('Repositories fetched in response:', response.length);
+      repos = response;
+      
+      // scan for the orgs the user has access to
+      orgs = await appOctokit.request("GET /user/orgs")
+                              .then(response => {
+                                console.log(response.data);
+                                console.log(`[${response.data.length}] orgs found`);
+                                return response.data;
+                              });
     } catch (error) {
       console.error('Error fetching repositories:', error);
     }
@@ -103,7 +112,20 @@ app.get('/info', (req, res) => {
   }
   console.log('Received info request');
   let repoNames = repos.map(repo => repo.full_name);
-  res.send(`[${repos.length}] Repositories found: <pre>` + JSON.stringify(repoNames, null, 2) + `</pre>`);
+  let response = `[${repos.length}] Repositories found: <pre>` + JSON.stringify(repoNames, null, 2) + `</pre><br>`;
+  
+  if (orgs !== undefined && orgs.length > 0) {
+    console.log(orgs);
+    console.log(`[${orgs.length}] orgs found: ` + JSON.stringify(orgs, null, 2));
+    const orgNames = orgs.map(org => org.login);
+    console.log(`[${orgs.length}] orgs found: ` + JSON.stringify(orgNames, null, 2));
+    response += `Organizations found: <pre>` + JSON.stringify(orgNames, null, 2) + `</pre>`;
+  }
+  else {
+    response += `No organizations found`;
+  }
+
+  res.send(response);
 });
 
 app.listen(port, () => {
