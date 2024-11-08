@@ -20,3 +20,41 @@ It will report out the repositories and workflow files that it found that contai
 3. The app will search for `yml` or `yaml` files within the `.github/workflows` folder.
 4. The app will parse the yaml content of each file to find lines containing `uses: actions/download-artifact` and `uses: actions/upload-artifact`.
 5. The app will extract the version number or sha hash from the line, which is located at the end of the line behind the `@` character.
+
+## Running the React App Locally
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/rajbos/find-action-used.git
+   cd find-action-used
+   ```
+
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+
+3. Create a `.env` file in the root of the project and add your GitHub OAuth credentials:
+   ```sh
+   CLIENT_ID=your_client_id
+   CLIENT_SECRET=your_client_secret
+   ```
+
+4. Start the backend server:
+   ```sh
+   npm run server
+   ```
+
+5. Start the React app:
+   ```sh
+   npm start
+   ```
+
+6. Open your browser and navigate to `http://localhost:3000` to use the app.
+
+## OAuth Setup Instructions
+
+1. Go to your GitHub account settings and create a new OAuth App.
+2. Set the "Authorization callback URL" to `http://localhost:3001/callback`.
+3. Note down the `Client ID` and `Client Secret` provided by GitHub.
+4. Add the `Client ID` and `Client Secret` to the `.env` file in the root of the project as shown above.
